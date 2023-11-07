@@ -66,3 +66,42 @@ exports.telemetryIdentifier = function () {
 exports.useSimpleFunctionSnippets = function () {
     return vscode.workspace.getConfiguration('ALTB').get('UseSimpleFunctionSnippets');
 }
+
+async function setAPIKey(context) {
+    vscode.window.showInputBox({
+        placeHolder: 'Enter your OpenAI API Key',
+        prompt: 'API Key will be securely stored',
+        password: true,
+        })
+            .then((apiKey) => {
+                if (apiKey) {
+                    context.secrets.store('al-toolbox.openAIKey', apiKey)
+                        .then(() => {
+                            vscode.window.showInformationMessage('Open API Key successfully set')
+                        });                    
+                }
+            });      
+}
+exports.setAPIKey = setAPIKey
+ 
+exports.getAPIKey = async function getAPIKey(context) {
+    const apiKey = await context.secrets.get('al-toolbox.openAIKey');
+
+    if (!apiKey) {
+        const setAPIKeyAction = 'Set OpenAI API Key';
+
+        vscode.window.showErrorMessage(
+            'OpenAI API Key must be set',
+            setAPIKeyAction
+        )
+            .then((selectedAction) => {
+                if (selectedAction == setAPIKeyAction) {
+                    setAPIKey(context);
+                }
+            });
+
+        throw 'OpenAI API Key must be set';
+    } else {
+        return apiKey;
+    }
+}

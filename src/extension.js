@@ -17,10 +17,11 @@ const contextSnippets = require('./contextSnippets/contextSnippets');
 const textColoring = require('./textColoring/textColoring');
 const setLoadFields = require('./codeGeneration/setLoadFields/setLoadFields');
 const checkTranslations = require('./codeAnalyzers/XLF/checkTranslations');
+const openAITranslator = require('./translator/openAITranslator');
+const generalFunctions = require('./generalFunctions');
 
 // Telemetry
 const telemetry = require('./telemetry');
-const { useSimpleFunctionSnippets } = require('./generalFunctions');
 let telemetryReporter;
 
 let fileSystemWatchers = new Map();
@@ -313,6 +314,32 @@ function activate(context) {
     }
     
     regionColorManager = new textColoring.RegionColorManager(context);
+ 
+    context.subscriptions.push(vscode.commands.registerCommand('al-toolbox.enterOpenAIAPIKey', () => {
+        generalFunctions.setAPIKey(context);
+    }));      
+
+    // Example usage:
+    generalFunctions.getAPIKey(context)
+        .then((apiKey) => {
+            const translator =  new openAITranslator.OpenAITranslator(apiKey);
+
+            const sourceText = 'Business Central is awesome!';
+            const sourceLanguage = 'enu';
+            const targetLanguage = 'deu';
+        
+            for (let i = 0; i < 10; i++) {
+        
+            translator.translate(sourceText, sourceLanguage,targetLanguage)
+                .then(translatedText => {
+                    console.log(`Translated Text: ${translatedText}`);
+                })
+                .catch(error => {
+                    console.error('Translation error:', error);
+                });
+            }
+        });
+
     console.log('AL Toolbox: Finished activating');
 }
 
