@@ -2,6 +2,7 @@ const vscode = require('vscode');
 
 const generalFunctions = require('../generalFunctions');
 const telemetry = require('../telemetry');
+const openAITranslator = require('../translations/openAITranslator');
 
 
 const targetLanguageRegex = /\$TargetLanguage/g;
@@ -20,6 +21,7 @@ exports.RegisterCommands = (context) => {
             .then(() => vscode.window.showInformationMessage(numberOfTranslations +' translation(s) created.'))
     }));    
 }
+
 
 /**
  * @param {vscode.TextEditorEdit} editBuilder
@@ -82,15 +84,43 @@ function translateCurrentFile(editBuilder, document) {
         }
     }
 
-    locationsToProcess.forEach(location => {    
-        let lineInfo = getLineNumbersForLocation(text, location.index);
-        let line = document.lineAt(lineInfo.start);  
-        let lineValue = getLineValue(location, targetLanguage1, targetLanguage2);
-        editBuilder.replace(line.range, lineValue);
-        console.log(`Index: "${location.index}", Identifier: ${location.identifier}, ENU: "${location.enu}", ${targetLanguage1}: "${location.targetLanguage1}", ${targetLanguage2}: "${location.targetLanguage2}"`);
+    locationsToProcess.forEach(location => {
+        completeLocation(location, targetLanguage1, targetLanguage2)
+            .then((location) => {
+                let lineInfo = getLineNumbersForLocation(text, location.index);
+                let line = document.lineAt(lineInfo.start);  
+                let lineValue = getLineValue(location, targetLanguage1, targetLanguage2);
+                editBuilder.replace(line.range, lineValue);
+                console.log(`Index: "${location.index}", Identifier: ${location.identifier}, ENU: "${location.enu}", ${targetLanguage1}: "${location.targetLanguage1}", ${targetLanguage2}: "${location.targetLanguage2}"`);
+            });
     });
+
+    // locationsToProcess.forEach(location => {
+    //     let lineInfo = getLineNumbersForLocation(text, location.index);
+    //     let line = document.lineAt(lineInfo.start);  
+    //     let lineValue = getLineValue(location, targetLanguage1, targetLanguage2);
+    //     editBuilder.replace(line.range, lineValue);
+    //     console.log(`Index: "${location.index}", Identifier: ${location.identifier}, ENU: "${location.enu}", ${targetLanguage1}: "${location.targetLanguage1}", ${targetLanguage2}: "${location.targetLanguage2}"`);
+    // });
 }
 
+async function completeLocation(location, targetLanguage1, targetLanguage2) {
+    const apiKey = await generalFunctions.getAPIKey();
+    const translator = new openAITranslator.OpenAITranslator(apiKey);
+  
+    if (targetLanguage1 !== '' && location.targetLanguage1 === '') {
+      const translation = await translator.translate(location.enu, 'enu', targetLanguage1);
+      location.targetLanguage1 = translation;
+    }
+  
+    if (targetLanguage2 !== '' && location.targetLanguage2 === '') {
+      const translation = await translator.translate(location.enu, 'enu', targetLanguage2);
+      location.targetLanguage2 = translation;
+    }
+  
+    return location;
+}
+    
 function getLineValue(location, targetLanguage1, targetLanguage2) {    
     let newLineValue = `${location.whiteSpace}${location.identifier} '${location.enu}'`;
 

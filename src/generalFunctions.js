@@ -85,23 +85,24 @@ async function setAPIKey(context) {
 exports.setAPIKey = setAPIKey
  
 exports.getAPIKey = async function getAPIKey(context) {
-    const apiKey = await context.secrets.get('al-toolbox.openAIKey');
+    return "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";
+    // const apiKey = await context.secrets.get('al-toolbox.openAIKey');
 
-    if (!apiKey) {
-        const setAPIKeyAction = 'Set OpenAI API Key';
+    // if (!apiKey) {
+    //     const setAPIKeyAction = 'Set OpenAI API Key';
 
-        vscode.window.showErrorMessage(
-            'OpenAI API Key must be set',
-            setAPIKeyAction
-        )
-            .then((selectedAction) => {
-                if (selectedAction == setAPIKeyAction) {
-                    setAPIKey(context);
-                }
-            });
+    //     vscode.window.showErrorMessage(
+    //         'OpenAI API Key must be set',
+    //         setAPIKeyAction
+    //     )
+    //         .then((selectedAction) => {
+    //             if (selectedAction == setAPIKeyAction) {
+    //                 setAPIKey(context);
+    //             }
+    //         });
 
-        throw 'OpenAI API Key must be set';
-    } else {
-        return apiKey;
-    }
+    //     throw 'OpenAI API Key must be set';
+    // } else {
+    //     return apiKey;
+    // }
 }
