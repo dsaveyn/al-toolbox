@@ -90,7 +90,11 @@
             {
                 "command": "al-toolbox.enterOpenAIAPIKey",
                 "title": "ALTB: Enter OpenAI API Key"
-            }            
+            },
+            {
+                "command": "al-toolbox.translateCurrentFile",
+                "title": "ALTB: Translate current file"
+            }
         ],
         "configuration": [
             {

@@ -17,8 +17,8 @@ const contextSnippets = require('./contextSnippets/contextSnippets');
 const textColoring = require('./textColoring/textColoring');
 const setLoadFields = require('./codeGeneration/setLoadFields/setLoadFields');
 const checkTranslations = require('./codeAnalyzers/XLF/checkTranslations');
-const openAITranslator = require('./translator/openAITranslator');
-const generalFunctions = require('./generalFunctions');
+const openAITranslator = require('./translations/openAITranslator');
+const translations = require('./translations/translations');
 
 // Telemetry
 const telemetry = require('./telemetry');
@@ -310,35 +310,36 @@ function activate(context) {
 
     const useSimpleFunctionSnippets = config.get('UseSimpleFunctionSnippets');
     if (useSimpleFunctionSnippets) {
-        telemetry.SendUseSimpleFunctionSnippetsEvent();
+        telemetry.sendUseSimpleFunctionSnippetsEvent();
     }
     
     regionColorManager = new textColoring.RegionColorManager(context);
+    translations.RegisterCommands(context);
  
-    context.subscriptions.push(vscode.commands.registerCommand('al-toolbox.enterOpenAIAPIKey', () => {
-        generalFunctions.setAPIKey(context);
-    }));      
+    // context.subscriptions.push(vscode.commands.registerCommand('al-toolbox.enterOpenAIAPIKey', () => {
+    //     generalFunctions.setAPIKey(context);
+    // }));      
 
-    // Example usage:
-    generalFunctions.getAPIKey(context)
-        .then((apiKey) => {
-            const translator =  new openAITranslator.OpenAITranslator(apiKey);
+//     // Example usage:
+//     generalFunctions.getAPIKey(context)
+//         .then((apiKey) => {
+//             const translator =  new openAITranslator.OpenAITranslator(apiKey);
 
-            const sourceText = 'Business Central is awesome!';
-            const sourceLanguage = 'enu';
-            const targetLanguage = 'deu';
+//             const sourceText = 'Business Central is awesome!';
+//             const sourceLanguage = 'enu';
+//             const targetLanguage = 'deu';
         
-            for (let i = 0; i < 10; i++) {
+//             for (let i = 0; i < 10; i++) {
         
-            translator.translate(sourceText, sourceLanguage,targetLanguage)
-                .then(translatedText => {
-                    console.log(`Translated Text: ${translatedText}`);
-                })
-                .catch(error => {
-                    console.error('Translation error:', error);
-                });
-            }
-        });
+//             translator.translate(sourceText, sourceLanguage,targetLanguage)
+//                 .then(translatedText => {
+//                     console.log(`Translated Text: ${translatedText}`);
+//                 })
+//                 .catch(error => {
+//                     console.error('Translation error:', error);
+//                 });
+//             }
+//         });
 
     console.log('AL Toolbox: Finished activating');
 }
