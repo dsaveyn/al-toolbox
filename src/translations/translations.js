@@ -111,11 +111,11 @@ function createLineText(location, targetLanguage1, targetLanguage2) {
     let lineText = `${location.whiteSpace}${location.identifier} '${location.enu}'`;
 
     if (targetLanguage1 !== "") {
-        lineText += `, Comment='${targetLanguage1}="${location.targetLanguage1}"`;
+        lineText += `, Comment='${targetLanguage1}="${location.targetLanguage1.replace(`'`,`''`)}"`;
     }
 
     if (targetLanguage2 !== "") {
-        lineText += `,${targetLanguage2}="${location.targetLanguage2}"'`;
+        lineText += `,${targetLanguage2}="${location.targetLanguage2.replace(`'`,`''`)}"'`;
     }
     else {
         lineText += `'`;
