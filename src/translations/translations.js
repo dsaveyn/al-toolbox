@@ -17,10 +17,17 @@ exports.RegisterCommands = (context) => {
         const targetLanguage2 = generalFunctions.snippetTargetLanguage2();
         
         let numberOfTranslations = 0; 
-
-        vscode.window.showInformationMessage('Translating...')
-        getLocationsToUpdate(editor.document, targetLanguage1, targetLanguage2, context)
+        
+        return vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: "Translating file...",
+            cancellable: true
+        }, async (progress, cancellationToken) => {
+            getLocationsToUpdate(editor.document, targetLanguage1, targetLanguage2, context)
             .then((locations) => {
+                if (cancellationToken.isCancellationRequested) 
+                    return;
+
                 editor.edit(editBuilder => {
                     numberOfTranslations = updateLocations(editBuilder, editor.document, locations, targetLanguage1, targetLanguage2)
                 }).then(() => vscode.window.showInformationMessage(numberOfTranslations +' translation(s) created.'));
@@ -30,7 +37,9 @@ exports.RegisterCommands = (context) => {
                     'Translations could not be created.',
                 )                
                 throw(error);
-            });        
+            }); 
+
+        });
     }));    
 }
 
