@@ -28,7 +28,7 @@ exports.RegisterCommands = (context) => {
 
                 editor.edit(editBuilder => {
                     numberOfTranslations = updateLocations(editBuilder, editor.document, locations, targetLanguage1, targetLanguage2)
-                }).then(() => vscode.window.showInformationMessage(numberOfTranslations +' translation(s) created.'));
+                }).then(() => vscode.window.showInformationMessage(numberOfTranslations +' line(s) updated.'));
             })
             .catch((error) => {
                 vscode.window.showErrorMessage(
