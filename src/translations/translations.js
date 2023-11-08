@@ -4,15 +4,13 @@ const generalFunctions = require('../generalFunctions');
 const telemetry = require('../telemetry');
 const openAITranslator = require('../translations/openAITranslator');
 
-
-const targetLanguageRegex = /\$TargetLanguage/g;
-const targetLanguage2Regex = /\$TargetLanguage2/g;
-
 exports.RegisterCommands = (context) => {
     context.subscriptions.push(vscode.commands.registerCommand('al-toolbox.enterOpenAIAPIKey', () => {
         generalFunctions.setAPIKey(context);
     }));
     context.subscriptions.push(vscode.commands.registerTextEditorCommand('al-toolbox.translateCurrentFile', async (editor) => {
+        telemetry.sendTranslateCurrentFileEvent();
+
         const targetLanguage1 = generalFunctions.snippetTargetLanguage();
         const targetLanguage2 = generalFunctions.snippetTargetLanguage2();
         
@@ -44,7 +42,7 @@ exports.RegisterCommands = (context) => {
 }
 
 function updateLocations(editBuilder, document, locations, targetLanguage1, targetLanguage2) {
-    let text = document.getText();
+    const text = document.getText();
 
     locations.forEach(location => {
         let lineInfo = getLineNumbersForLocation(text, location.index);
@@ -57,8 +55,7 @@ function updateLocations(editBuilder, document, locations, targetLanguage1, targ
 }
 
 async function getLocationsToUpdate(document, targetLanguage1, targetLanguage2, context) {
-
-    let text = document.getText();
+    const text = document.getText();
 
     const withCommentRegex = new RegExp(`(?!.*\\bLocked\\s*=\\s*true\\b)(?<whitespace>[ \t]*)(?<identifier>(?:\\S*\\s*:\\s*Label)|(?:(?:Caption|ToolTip))\\s*=)\\s*'(?<enu>[^']+)'.*;`, 'gi')
     const targetLanguagesRegex = new RegExp(`(?:${targetLanguage1}="(?<targetLanguage1>[^"]*)")|(?:${targetLanguage2}="(?<targetLanguage2>[^"]*)")`, 'gi');
@@ -136,10 +133,7 @@ function getLineNumbersForLocation(text, start) {
 }
 
 function extractTargetLanguageTranslations(input, targetLanguage1, targetLanguage2) {
-    const extractTargetLanguagesRegex = new RegExp(
-        `(?:${targetLanguage1}="(?<translationTargetLanguage1>[^"]*)")|(?:${targetLanguage2}="(?<translationTargetLanguage2>[^"]*)")`,
-        'g'
-    );
+    const extractTargetLanguagesRegex = new RegExp(`(?:${targetLanguage1}="(?<translationTargetLanguage1>[^"]*)")|(?:${targetLanguage2}="(?<translationTargetLanguage2>[^"]*)")`,'g');
     const result = {
         translationTargetLanguage1: '',
         translationTargetLanguage2: ''
