@@ -49,7 +49,7 @@ function updateLocations(editBuilder, document, locations, targetLanguage1, targ
     locations.forEach(location => {
         let lineInfo = getLineNumbersForLocation(text, location.index);
         let line = document.lineAt(lineInfo.start);  
-        let lineValue = getLineValue(location, targetLanguage1, targetLanguage2);
+        let lineValue = createLineText(location, targetLanguage1, targetLanguage2);
         editBuilder.replace(line.range, lineValue);
     });
 
@@ -60,23 +60,24 @@ async function getLocationsToUpdate(document, targetLanguage1, targetLanguage2, 
 
     let text = document.getText();
 
-    // Todo: Locked
-    const withCommentRegex = new RegExp(`(?<whitespace>[ \t]*)(?<identifier>(?:\\S*\\s*:\\s*Label)|(?:(?:Caption|ToolTip))\\s*=)\\s*'(?<enu>[^']+)'.*;`, 'gi')
+    const withCommentRegex = new RegExp(`(?!.*\\bLocked\\s*=\\s*true\\b)(?<whitespace>[ \t]*)(?<identifier>(?:\\S*\\s*:\\s*Label)|(?:(?:Caption|ToolTip))\\s*=)\\s*'(?<enu>[^']+)'.*;`, 'gi')
     const targetLanguagesRegex = new RegExp(`(?:${targetLanguage1}="(?<targetLanguage1>[^"]*)")|(?:${targetLanguage2}="(?<targetLanguage2>[^"]*)")`, 'gi');
 
     let match;
     let locationsToProcess = [];
-    while((match = withCommentRegex.exec(text)) != null){       
-        const languagesMatch = targetLanguagesRegex.exec(match[0]);
+    while((match = withCommentRegex.exec(text)) != null){            
+        const translations = extractTargetLanguageTranslations(match[0], targetLanguage1, targetLanguage2)
 
-        locationsToProcess.push({
-            index: match.index,
-            whiteSpace: match.groups.whitespace ? match.groups.whitespace : '',
-            identifier: match.groups.identifier ? match.groups.identifier : '',
-            enu: match.groups.enu ? match.groups.enu : '',
-            targetLanguage1: languagesMatch && languagesMatch.groups.targetLanguage1 ? languagesMatch.groups.targetLanguage1 : '',
-            targetLanguage2: languagesMatch && languagesMatch.groups.targetLanguage2 ? languagesMatch.groups.targetLanguage2 : ''
-        });
+        if (translations.translationTargetLanguage1 == "" || translations.translationTargetLanguage2 == '') {
+            locationsToProcess.push({
+                index: match.index,
+                whiteSpace: match.groups.whitespace ? match.groups.whitespace : '',
+                identifier: match.groups.identifier,
+                enu: match.groups.enu,
+                targetLanguage1: translations.translationTargetLanguage1,
+                targetLanguage2: translations.translationTargetLanguage2
+            });
+        };
     }
 
     const results = await Promise.all(
@@ -106,22 +107,22 @@ async function completeLocation(location, targetLanguage1, targetLanguage2, cont
     return location;
 }
     
-function getLineValue(location, targetLanguage1, targetLanguage2) {    
-    let newLineValue = `${location.whiteSpace}${location.identifier} '${location.enu}'`;
+function createLineText(location, targetLanguage1, targetLanguage2) {    
+    let lineText = `${location.whiteSpace}${location.identifier} '${location.enu}'`;
 
     if (targetLanguage1 !== "") {
-        newLineValue += `, Comment='${targetLanguage1}="${location.targetLanguage1}"`;
+        lineText += `, Comment='${targetLanguage1}="${location.targetLanguage1}"`;
     }
 
     if (targetLanguage2 !== "") {
-        newLineValue += `,${targetLanguage2}="${location.targetLanguage2}"'`;
+        lineText += `,${targetLanguage2}="${location.targetLanguage2}"'`;
     }
     else {
-        newLineValue += `'`;
+        lineText += `'`;
     }
 
-    newLineValue += `;`;
-    return newLineValue;
+    lineText += `;`;
+    return lineText;
 }
 
 function getLineNumbersForLocation(text, start) {
@@ -132,4 +133,26 @@ function getLineNumbersForLocation(text, start) {
         start: startLineNo,
         end: startLineNo + tempString.split(/\n/).length - 1
     }
+}
+
+function extractTargetLanguageTranslations(input, targetLanguage1, targetLanguage2) {
+    const extractTargetLanguagesRegex = new RegExp(
+        `(?:${targetLanguage1}="(?<translationTargetLanguage1>[^"]*)")|(?:${targetLanguage2}="(?<translationTargetLanguage2>[^"]*)")`,
+        'g'
+    );
+    const result = {
+        translationTargetLanguage1: '',
+        translationTargetLanguage2: ''
+    };
+
+    let match;
+    while ((match = extractTargetLanguagesRegex.exec(input)) !== null) {
+        if (match[1]) {
+            result.translationTargetLanguage1 = match[1];
+        } else if (match[2]) {
+            result.translationTargetLanguage2 = match[2];
+        }
+    }
+
+    return result;
 }

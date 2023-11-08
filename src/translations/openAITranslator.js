@@ -17,7 +17,7 @@ class OpenAITranslator {
         messages: [
           {
             "role": "system",
-            "content": `You will be provided with a sentence in ${sourceLanguage}, and your task is to translate it into ${targetLanguage}. If you cannot translate it, return an empty string.`
+            "content": `You will be provided with a sentence in ${sourceLanguage}, and your task is to translate it into ${targetLanguage}. Only return the translation, otherwise return an empty text.`
           },
           {
             "role": "user",
