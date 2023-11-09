@@ -1,6 +1,6 @@
 const vscode = require('vscode');
 const fileManagement = require('./fileManagement/fileManagement');
-
+const fs = require('fs');
 
 /**
  * @param {string} string 
@@ -104,4 +104,33 @@ exports.getAPIKey = async function getAPIKey(context) {
     } else {
         return apiKey;
     }
+}
+
+exports.getPackageCachePath = function getPackageCachePath() {
+    let packageCachePath = vscode.workspace.getConfiguration('al').get('packageCachePath');
+    
+    if (!packageCachePath) {
+        const currentWorkspaceFolder = vscode.workspace.workspaceFolders[0];
+        packageCachePath = vscode.Uri.joinPath(currentWorkspaceFolder.uri, '.alpackages').path.slice(1);
+    }
+    
+    packageCachePath = packageCachePath.replace(new RegExp("/", "g"), '\\')
+
+    if (!fs.existsSync(packageCachePath)) {
+        vscode.window.showErrorMessage('Package cache could not be determined.');
+        throw 'Package cache could not be determined.';
+    }     
+
+    return packageCachePath;
+}
+
+exports.getTranslationCachePath = function getTranslationCachePath() {
+    const translationCachePath = vscode.workspace.getConfiguration('ALTB').get('translationCachePath');
+
+    if (!fs.existsSync(translationCachePath)) {
+        vscode.window.showErrorMessage('Invalid translation cache path specified.');
+        throw 'Invalid translation cache path specified';
+    }      
+
+    return translationCachePath;  
 }

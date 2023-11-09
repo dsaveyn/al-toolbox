@@ -85,7 +85,7 @@
             },
             {
                 "command": "al-toolbox.renumberAllFields",
-                "title": "ALTB: Renumber all fields"            
+                "title": "ALTB: Renumber all fields"
             },
             {
                 "command": "al-toolbox.enterOpenAIAPIKey",
@@ -94,7 +94,11 @@
             {
                 "command": "al-toolbox.translateCurrentFile",
                 "title": "ALTB: Translate current file"
-            }
+            },
+            {
+                "command": "al-toolbox.generateTranslationCache",
+                "title": "ALTB: Genererate translations cache"
+            }                         
         ],
         "configuration": [
             {
@@ -195,7 +199,13 @@
                         "scope": "resource",
                         "pattern": "^[A-Za-z0-9]{0,10}$",
                         "patternErrorMessage": "Maximum 10 characters (A-Z, a-z, 0-9)"
-                    }
+                    },
+                    "ALTB.translationCachePath": {
+                        "type": "string",
+                        "default": "",
+                        "description": "Path were the translation cache is maintained",
+                        "scope": "resource"
+                    }                    
                 }
             }
         ]
@@ -215,10 +225,11 @@
         "vscode-test": "^1.3.0"
     },
     "dependencies": {
+        "@basisai/remote-zip": "^0.2.7",
         "glob": "7.1.6",
         "openai": "^4.15.4",
-        "vscode-extension-telemetry": "^0.4.5",
-        "vscode": "^10.2.0"
+        "vscode": "^10.2.0",
+        "vscode-extension-telemetry": "^0.4.5"
     },
     "extensionDependencies": [
         "andrzejzwierzchowski.al-code-outline"
