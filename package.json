@@ -97,7 +97,7 @@
             },
             {
                 "command": "al-toolbox.generateTranslationCache",
-                "title": "ALTB: Genererate translations cache"
+                "title": "ALTB: Genererate translation cache"
             }
         ],
         "configuration": [

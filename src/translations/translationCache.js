@@ -36,16 +36,16 @@ async function extractXLIFFFiles(destinationPath) {
     removeDirectoryContents(destinationPath);
 
     let appFilesToExtract = [];
-    await findAppFile(packageCachePath, 'microsoft_application*.app', appFilesToExtract);
-    await findAppFile(packageCachePath, 'microsoft_system application*.app', appFilesToExtract);
-    await findAppFile(packageCachePath, 'microsoft_base application*.app', appFilesToExtract);        
+    await findAppFileWithHighestVersion(packageCachePath, 'microsoft_application*.app', appFilesToExtract);
+    await findAppFileWithHighestVersion(packageCachePath, 'microsoft_system application*.app', appFilesToExtract);
+    await findAppFileWithHighestVersion(packageCachePath, 'microsoft_base application*.app', appFilesToExtract);        
 
     for(const appFile of appFilesToExtract) {
         await extractXLIFF(appFile,destinationPath, [targetLanguage1, targetLanguage2]);
     }
 }
 
-async function findAppFile(sourcePath, pattern, appFiles) {
+async function findAppFileWithHighestVersion(sourcePath, pattern, appFiles) {
     const files = await findFiles(sourcePath, pattern)
 
     if (files.length > 0) {
