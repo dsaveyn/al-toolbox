@@ -432,3 +432,8 @@ exports.AlObjectTypeVariables = [
 ]
 
 exports.AppInsightsKey = "fdac9d40-1e54-4c01-93a1-0585a60d656a";
+
+exports.MSApplicationAppPattern = "microsoft_application*.app";
+exports.MSSystemApplicationAppPattern = "microsoft_system application*.app";
+exports.MSBaseApplicationAppPattern = "microsoft_base application*.app";
+exports.TranslationCachePath = "translationCache.json";

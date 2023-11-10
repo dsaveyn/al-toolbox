@@ -1,5 +1,6 @@
 const XLIFF = require('./xliff');
 const fs = require('fs');
+const constants = require('../constants');
 
 class XLIFFStorage {
     constructor() {
@@ -23,17 +24,17 @@ class XLIFFStorage {
                 }
             }
         }
-        return null; // Return null if not found
+        return null;
     }
 
     saveToDisk() {
-        const outputPath = this.getStoragePath();
+        const outputPath = constants.TranslationCachePath;
         const dataToSave = JSON.stringify(this.xliffFiles, null, 2);
         fs.writeFileSync(outputPath, dataToSave, 'utf-8');
     }
 
     loadFromDisk() {
-        const inputPath = this.getStoragePath();
+        const inputPath = constants.TranslationCachePath;
         if (!fs.existsSync(inputPath)) return;
 
         const rawData = fs.readFileSync(inputPath, 'utf-8');
@@ -49,10 +50,6 @@ class XLIFFStorage {
     clear() {
         this.xliffFiles = [];
         this.saveToDisk();
-    }
-
-    getStoragePath() {
-        return 'C:\\Temp\\cache.json';
     }
 }
 

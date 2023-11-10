@@ -6,6 +6,7 @@ const util = require('util');
 const JSZip = require('jszip');
 const vscode = require('vscode');
 const xliffStorage = require('./xliffStorage');
+const constants = require('../constants');
 
 async function generateTranslationCache() {
     return vscode.window.withProgress({
@@ -24,7 +25,11 @@ async function generateTranslationCache() {
 exports.generateTranslationCache = generateTranslationCache;
 
 async function findTranslationInCache(textToTranslate, sourceLanguage, targetLanguage, context) {   
-    return xliffStorage.findTranslation(sourceLanguage, targetLanguage, textToTranslate);
+    const translation = xliffStorage.findTranslation(sourceLanguage, targetLanguage, textToTranslate);
+    if(!translation)         
+        console.log(`No translation found for '${textToTranslate}' in cache`)
+
+    return translation;
 }
 exports.findTranslationInCache = findTranslationInCache;
 
@@ -36,9 +41,9 @@ async function extractXLIFFFiles(destinationPath) {
     removeDirectoryContents(destinationPath);
 
     let appFilesToExtract = [];
-    await findAppFileWithHighestVersion(packageCachePath, 'microsoft_application*.app', appFilesToExtract);
-    await findAppFileWithHighestVersion(packageCachePath, 'microsoft_system application*.app', appFilesToExtract);
-    await findAppFileWithHighestVersion(packageCachePath, 'microsoft_base application*.app', appFilesToExtract);        
+    await findAppFileWithHighestVersion(packageCachePath, constants.MSApplicationAppPattern, appFilesToExtract);
+    await findAppFileWithHighestVersion(packageCachePath, constants.MSSystemApplicationAppPattern, appFilesToExtract);
+    await findAppFileWithHighestVersion(packageCachePath, constants.MSBaseApplicationAppPattern, appFilesToExtract);        
 
     for(const appFile of appFilesToExtract) {
         await extractXLIFF(appFile,destinationPath, [targetLanguage1, targetLanguage2]);
