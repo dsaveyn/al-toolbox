@@ -3,6 +3,7 @@ const vscode = require('vscode');
 const generalFunctions = require('../generalFunctions');
 const telemetry = require('../telemetry');
 const openAITranslator = require('../translations/openAITranslator');
+const translationCache = require('../translations/translationCache');
 
 exports.RegisterCommands = (context) => {
     context.subscriptions.push(vscode.commands.registerCommand('al-toolbox.enterOpenAIAPIKey', () => {
@@ -87,21 +88,29 @@ async function getLocationsToUpdate(document, targetLanguage1, targetLanguage2, 
     return results;
 }
 
-async function completeLocation(location, targetLanguage1, targetLanguage2, context) {
-    const apiKey = await generalFunctions.getAPIKey(context);
-    const translator = new openAITranslator.OpenAITranslator(apiKey);
-  
+async function completeLocation(location, targetLanguage1, targetLanguage2, context) { 
     if (targetLanguage1 !== '' && location.targetLanguage1 === '') {
-      const translation = await translator.translate(location.enu, 'enu', targetLanguage1);
+      const translation = await translate(location.enu, 'enu', targetLanguage1, context);
       location.targetLanguage1 = translation;
     }
   
     if (targetLanguage2 !== '' && location.targetLanguage2 === '') {
-      const translation = await translator.translate(location.enu, 'enu', targetLanguage2);
+      const translation = await translate(location.enu, 'enu', targetLanguage2, context);
       location.targetLanguage2 = translation;
     }
   
     return location;
+}
+
+async function translate(textToTranslate, sourceLanguage, targetLanguage, context) {
+    let translation = await translationCache.findTranslationInCache(textToTranslate,sourceLanguage,targetLanguage)
+    if (!translation) {
+        const apiKey = await generalFunctions.getAPIKey(context);
+        const translator = new openAITranslator.OpenAITranslator(apiKey);        
+        translation = await translator.translate(textToTranslate, sourceLanguage, targetLanguage);
+    }
+
+    return translation;
 }
     
 function createLineText(location, targetLanguage1, targetLanguage2) {    

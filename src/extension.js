@@ -19,7 +19,7 @@ const setLoadFields = require('./codeGeneration/setLoadFields/setLoadFields');
 const checkTranslations = require('./codeAnalyzers/XLF/checkTranslations');
 const openAITranslator = require('./translations/openAITranslator');
 const translations = require('./translations/translations');
-const generateTranslationCache = require('./translations/generateTranslationCache');
+const translationCache = require('./translations/translationCache');
 
 // Telemetry
 const telemetry = require('./telemetry');
@@ -318,10 +318,14 @@ function activate(context) {
     translations.RegisterCommands(context);
  
     context.subscriptions.push(vscode.commands.registerCommand('al-toolbox.generateTranslationCache', async () => {
-        generateTranslationCache.createTranslationCache();
+        translationCache.createTranslationCache();
     }));
 
-    console.log('AL Toolbox: Finished activating');
+    context.subscriptions.push(vscode.commands.registerCommand('al-toolbox.test', async () => {
+        console.log(translationCache.findTranslationInCache('General Ledger Setup', 'en-US','nl-BE', context));
+    }));    
+
+    console.log('AL Toolbox: Finished activating');    
 }
 
 // this method is called when your extension is deactivated

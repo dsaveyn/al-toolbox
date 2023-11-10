@@ -5,6 +5,8 @@ const glob = require('glob');
 const util = require('util');
 const JSZip = require('jszip');
 const vscode = require('vscode');
+const xliff = require('./xliff');
+const cache = require('../cache');
 
 async function createTranslationCache() {
     return vscode.window.withProgress({
@@ -23,6 +25,58 @@ async function createTranslationCache() {
     }).then(() => vscode.window.showInformationMessage('Translation cache succesfully generated'))
 }
 exports.createTranslationCache = createTranslationCache;
+
+/**
+ * @param {boolean} force The XLIFF file
+ */
+async function generateTranslationCache(force) {
+    if (!cache.get('translationCacheGenerated') || force) {
+        const translationCachePath = generalFunctions.getTranslationCachePath();
+        const xlfFiles = await findFiles(translationCachePath, '*.xlf')
+
+        for(const xlfFile of xlfFiles) {
+            const xlf = new xliff.XLIFF(xlfFile);
+            await xlf.parse();
+            addXLIFFToCache(xlf)
+        }    
+
+        cache.set('translationCacheGenerated', true);
+    }
+}
+
+async function findTranslationInCache(textToTranslate, sourceLanguage, targetLanguage, context) {
+    await generateTranslationCache(false);
+
+    const filesToCheck = cache.get(targetLanguage);
+    if (filesToCheck) {
+        for(const file of filesToCheck) {
+            const translation = file.findTargetTextBySource(textToTranslate)
+            if (translation) 
+                return translation;            
+        }
+    }
+
+    return null;
+}
+exports.findTranslationInCache = findTranslationInCache;
+
+/**
+ * @param {xliff.XLIFF} xliff The XLIFF file
+ */
+function addXLIFFToCache(xliff) {
+    let targetLanguage = cache.get(xliff.getTargetLanguage());
+
+    if(!targetLanguage) {
+        targetLanguage = [];        
+    }
+
+    targetLanguage.push(xliff)
+    cache.set(xliff.targetLanguage, targetLanguage);
+}
+
+async function getXLIFFsFromCache(targetLanguage) {
+    return cache.get(targetLanguage);
+}
 
 async function findFiles(directoryToSearch, pattern) {
     const globPromise = util.promisify(glob);

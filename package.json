@@ -98,7 +98,11 @@
             {
                 "command": "al-toolbox.generateTranslationCache",
                 "title": "ALTB: Genererate translations cache"
-            }                         
+            },
+            {
+                "command": "al-toolbox.test",
+                "title": "ALTB: Test"
+            }
         ],
         "configuration": [
             {
@@ -205,7 +209,7 @@
                         "default": "",
                         "description": "Path were the translation cache is maintained",
                         "scope": "resource"
-                    }                    
+                    }
                 }
             }
         ]
@@ -227,9 +231,11 @@
     "dependencies": {
         "@basisai/remote-zip": "^0.2.7",
         "glob": "7.1.6",
+        "jszip": "^3.10.1",
+        "node-cache": "^5.1.2",
         "openai": "^4.15.4",
-        "vscode": "^10.2.0",
-        "vscode-extension-telemetry": "^0.4.5"
+        "vscode-extension-telemetry": "^0.4.5",
+        "xml2js": "^0.6.2"
     },
     "extensionDependencies": [
         "andrzejzwierzchowski.al-code-outline"
