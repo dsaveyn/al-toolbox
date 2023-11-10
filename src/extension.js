@@ -318,12 +318,8 @@ function activate(context) {
     translations.RegisterCommands(context);
  
     context.subscriptions.push(vscode.commands.registerCommand('al-toolbox.generateTranslationCache', async () => {
-        translationCache.createTranslationCache();
+        translationCache.generateTranslationCache();
     }));
-
-    context.subscriptions.push(vscode.commands.registerCommand('al-toolbox.test', async () => {
-        console.log(translationCache.findTranslationInCache('General Ledger Setup', 'en-US','nl-BE', context));
-    }));    
 
     console.log('AL Toolbox: Finished activating');    
 }

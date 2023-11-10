@@ -90,12 +90,12 @@ async function getLocationsToUpdate(document, targetLanguage1, targetLanguage2, 
 
 async function completeLocation(location, targetLanguage1, targetLanguage2, context) { 
     if (targetLanguage1 !== '' && location.targetLanguage1 === '') {
-      const translation = await translate(location.enu, 'enu', targetLanguage1, context);
+      const translation = await translate(location.enu, 'en-US', targetLanguage1, context);
       location.targetLanguage1 = translation;
     }
   
     if (targetLanguage2 !== '' && location.targetLanguage2 === '') {
-      const translation = await translate(location.enu, 'enu', targetLanguage2, context);
+      const translation = await translate(location.enu, 'en-US', targetLanguage2, context);
       location.targetLanguage2 = translation;
     }
   

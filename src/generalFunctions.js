@@ -124,13 +124,11 @@ exports.getPackageCachePath = function getPackageCachePath() {
     return packageCachePath;
 }
 
-exports.getTranslationCachePath = function getTranslationCachePath() {
-    const translationCachePath = vscode.workspace.getConfiguration('ALTB').get('translationCachePath');
+exports.createTempDirectory = async function createTempDirectory() {
+    const { sep } = require('path'); 
+    const fs = require('fs').promises
+    const os = require('os');;
+    const tmpDir = os.tmpdir();  
 
-    if (!fs.existsSync(translationCachePath)) {
-        vscode.window.showErrorMessage('Invalid translation cache path specified.');
-        throw 'Invalid translation cache path specified';
-    }      
-
-    return translationCachePath;  
+    return await fs.mkdtemp(`${tmpDir}${sep}`)
 }

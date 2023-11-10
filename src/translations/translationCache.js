@@ -5,77 +5,64 @@ const glob = require('glob');
 const util = require('util');
 const JSZip = require('jszip');
 const vscode = require('vscode');
-const xliff = require('./xliff');
-const cache = require('../cache');
+const xliffStorage = require('./xliffStorage');
 
-async function createTranslationCache() {
+async function generateTranslationCache() {
     return vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
         title: "Generating translation cache...",
         cancellable: true
     }, async (progress, cancellationToken) => {
-        const packageCachePath = generalFunctions.getPackageCachePath();       
-        const translationCachePath = generalFunctions.getTranslationCachePath();
-        removeDirectoryContents(translationCachePath);
+        const tempWorkingDir = await generalFunctions.createTempDirectory();
 
-        const files = await findFiles(packageCachePath, 'microsoft*.app')
+        await extractXLIFFFiles(tempWorkingDir);
+        await readXLIFFFilesIntoStorage(tempWorkingDir)     
 
-        await extractAllZipFiles(files, translationCachePath);
-        await moveXlfFilesToRoot(translationCachePath);
+        await fs.rmdir(tempWorkingDir, { recursive: true });
     }).then(() => vscode.window.showInformationMessage('Translation cache succesfully generated'))
 }
-exports.createTranslationCache = createTranslationCache;
+exports.generateTranslationCache = generateTranslationCache;
 
-/**
- * @param {boolean} force The XLIFF file
- */
-async function generateTranslationCache(force) {
-    if (!cache.get('translationCacheGenerated') || force) {
-        const translationCachePath = generalFunctions.getTranslationCachePath();
-        const xlfFiles = await findFiles(translationCachePath, '*.xlf')
-
-        for(const xlfFile of xlfFiles) {
-            const xlf = new xliff.XLIFF(xlfFile);
-            await xlf.parse();
-            addXLIFFToCache(xlf)
-        }    
-
-        cache.set('translationCacheGenerated', true);
-    }
-}
-
-async function findTranslationInCache(textToTranslate, sourceLanguage, targetLanguage, context) {
-    await generateTranslationCache(false);
-
-    const filesToCheck = cache.get(targetLanguage);
-    if (filesToCheck) {
-        for(const file of filesToCheck) {
-            const translation = file.findTargetTextBySource(textToTranslate)
-            if (translation) 
-                return translation;            
-        }
-    }
-
-    return null;
+async function findTranslationInCache(textToTranslate, sourceLanguage, targetLanguage, context) {   
+    return xliffStorage.findTranslation(sourceLanguage, targetLanguage, textToTranslate);
 }
 exports.findTranslationInCache = findTranslationInCache;
 
-/**
- * @param {xliff.XLIFF} xliff The XLIFF file
- */
-function addXLIFFToCache(xliff) {
-    let targetLanguage = cache.get(xliff.getTargetLanguage());
+async function extractXLIFFFiles(destinationPath) {
+    const packageCachePath = generalFunctions.getPackageCachePath(); 
+    const targetLanguage1 = generalFunctions.snippetTargetLanguage();
+    const targetLanguage2 = generalFunctions.snippetTargetLanguage2();
 
-    if(!targetLanguage) {
-        targetLanguage = [];        
+    removeDirectoryContents(destinationPath);
+
+    let appFilesToExtract = [];
+    await findAppFile(packageCachePath, 'microsoft_application*.app', appFilesToExtract);
+    await findAppFile(packageCachePath, 'microsoft_system application*.app', appFilesToExtract);
+    await findAppFile(packageCachePath, 'microsoft_base application*.app', appFilesToExtract);        
+
+    for(const appFile of appFilesToExtract) {
+        await extractXLIFF(appFile,destinationPath, [targetLanguage1, targetLanguage2]);
     }
-
-    targetLanguage.push(xliff)
-    cache.set(xliff.targetLanguage, targetLanguage);
 }
 
-async function getXLIFFsFromCache(targetLanguage) {
-    return cache.get(targetLanguage);
+async function findAppFile(sourcePath, pattern, appFiles) {
+    const files = await findFiles(sourcePath, pattern)
+
+    if (files.length > 0) {
+        files.sort((a, b) => b.localeCompare(a));
+        appFiles.push(files[0]);
+    }        
+}
+
+async function readXLIFFFilesIntoStorage(sourcePath) {    
+    const xlfFiles = await findFiles(sourcePath, '*.xlf')
+
+    xliffStorage.clear();
+    for(const xlfFile of xlfFiles) {
+        xliffStorage.addXLIFFFile(xlfFile)
+    }    
+
+    xliffStorage.saveToDisk();   
 }
 
 async function findFiles(directoryToSearch, pattern) {
@@ -85,88 +72,11 @@ async function findFiles(directoryToSearch, pattern) {
         const files = await globPromise(pattern, {
             cwd: directoryToSearch,
             nocase: true,
-            absolute: true
+            absolute: true,
         });
         return files;
     } catch (error) {
-        throw `An error occurred while locating the files: ${error}`;
-    }
-}
-
-async function extractAllZipFiles(zipFilePaths, outputDirectory) {
-    for (const zipFilePath of zipFilePaths) {
-        try {
-            await extractZipToDirectory(zipFilePath, outputDirectory);
-            console.log(`Extracted ${zipFilePath}`);
-        } catch (error) {
-            console.error(`An error occurred during extraction of ${zipFilePath}: ${error}`);
-        }
-    }
-}
-
-async function extractZipToDirectory(zipFilePath, outputDirectory) {
-    try {
-        const zipData = await fs.readFile(zipFilePath);
-        const zip = new JSZip();
-        const zipFiles = await zip.loadAsync(zipData);
-
-        // Create a subdirectory based on the zip file name
-        const zipFileName = path.basename(zipFilePath, path.extname(zipFilePath));
-        const subDirectory = path.join(outputDirectory, zipFileName);
-
-        // Create the subdirectory if it doesn't exist
-        await fs.mkdir(subDirectory, { recursive: true });
-
-        for (const [entryName, content] of Object.entries(zipFiles.files)) {            
-            // Split the entry name into parts to simulate directory structure
-            const entryParts = entryName.split('/');
-            let currentDirectory = subDirectory;
-
-            // Create directories for each part of the entry name
-            for (let i = 0; i < entryParts.length - 1; i++) {
-                currentDirectory = path.join(currentDirectory, entryParts[i]);
-                await fs.mkdir(currentDirectory, { recursive: true });
-            }
-
-            // Extract files
-            if (!content.dir) {
-                const entryPath = path.join(subDirectory, entryName);
-                const entryData = await content.async('nodebuffer');
-                await fs.writeFile(entryPath, entryData);
-            }
-        }
-    } catch (error) {
-        throw error;
-    }
-}
-
-async function moveXlfFilesToRoot(rootDirectory) {
-    try {
-        async function processDirectory(directory) {
-            const items = await fs.readdir(directory);
-
-            for (const item of items) {
-                const itemPath = path.join(directory, item);
-                const stats = await fs.lstat(itemPath);
-
-                if (stats.isDirectory()) {
-                    // If it's a subdirectory, recursively process it
-                    await processDirectory(itemPath);
-                    await fs.rmdir(itemPath);
-                } else if (path.extname(item) === '.xlf') {
-                    // If it's an XLF file, move it to the root directory
-                    await fs.rename(itemPath, path.join(rootDirectory, item));
-                } else {
-                    // If it's neither a directory nor an XLF file, remove it
-                    await fs.unlink(itemPath);
-                }
-            }
-        }
-
-        // Start the recursive process from the root directory
-        await processDirectory(rootDirectory);
-    } catch (error) {
-        console.error(`An error occurred while locating the xlf files in directory ${rootDirectory}: ${error}`);
+        throw new Error(`An error occurred while locating the files: ${error}`);
     }
 }
 
@@ -183,4 +93,33 @@ async function removeDirectoryContents(directoryToProcess) {
             await fs.unlink(itemPath);
         }
     }
+}
+
+function extractXLIFF(xliffFilePath, outputDirectory, languages) {
+    return new Promise((resolve, reject) => {
+      fs.readFile(xliffFilePath)
+        .then(data => JSZip.loadAsync(data))
+        .then(zip => {
+          const promises = [];
+  
+          zip.forEach((relativePath, zipEntry) => {
+            const fileName = path.basename(relativePath).toLowerCase();
+  
+            if (
+              languages.some(lang => fileName.includes(`.${lang.toLowerCase()}.xlf`)) &&
+              !/\.g\.xlf$/i.test(relativePath)
+            ) {
+              const outputPath = path.join(outputDirectory, fileName);
+  
+              promises.push(
+                zip.file(relativePath).async('string').then(content => fs.writeFile(outputPath, content))
+              );
+            }
+          });
+  
+          return Promise.all(promises);
+        })
+        .then(() => resolve('Extraction complete.'))
+        .catch(error => reject(error));
+    });
 }
