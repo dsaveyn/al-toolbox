@@ -5,7 +5,7 @@ const alFileManagement = require('./fileManagement/alFileManagement');
 const regionWrapper = require('./regionWrapper/regionWrapper');
 const renumber = require('./renumberObjects/renumber');
 const renumberFields = require('./renumberObjects/renumberFields');
-const changePrefix = require('./changePrefix/changePrefix');
+const changePrefixOrSuffix = require('./changePrefixOrSuffix/changePrefixOrSuffix');
 const uniqueApiEntities = require('./codeAnalyzers/apiPageEntityAnalyzer');
 const copyFieldsToRelatedTables = require('./relatedTables/copyFieldsToRelatedTables');
 const AlCodeActionProvider = require('./codeFixers/AlCodeActionProvider');
@@ -185,34 +185,13 @@ function activate(context) {
     context.subscriptions.push(vscode.commands.registerCommand('al-toolbox.changePrefix', async () => {
         telemetry.sendChangePrefixEvent();
         const currPrefix = await getObjectPrefix('current prefix');
-        if (currPrefix !== undefined){
-            const newPrefix = await vscode.window.showInputBox({placeHolder: 'new prefix'});
-            if (newPrefix !== undefined) {
-                if (currPrefix === newPrefix) {
-                    vscode.window.showInformationMessage(`Prefix ${newPrefix} is the same as the current prefix.`);
-                } else {
-                    const changeInSetting = await vscode.window.showQuickPick(['Yes', 'No'], {placeHolder: 'Do you want to change the prefix in settings.json?'});
-                    if (changeInSetting !== undefined) {
-                        if (changeInSetting === 'Yes')
-                            changePrefix.changePrefixSettings(currPrefix, newPrefix);
-                        changePrefix.changeObjectPrefix(currPrefix, newPrefix)
-                            .then(async results => {
-                                await SaveAndCloseAll();
-                                let numberOfDocumentsChanged = 0;
-                                results.objectResults.forEach(result => {
-                                    if (result) ++numberOfDocumentsChanged;
-                                });
-                                let numberOfFieldsChanged = 0;
-                                results.fieldResults.forEach(result => {
-                                    if (result) ++numberOfFieldsChanged;
-                                });
-                                vscode.window.showInformationMessage(
-                                    `${numberOfFieldsChanged} field${numberOfFieldsChanged !== 1?'s':''} and ${numberOfDocumentsChanged} object${numberOfDocumentsChanged !== 1?'s':''} changed.`);
-                            });
-                    }
-                }
-            }
-        }
+        await handleSuffixOrPrefixCommand(currPrefix, 'prefix', changePrefixOrSuffix.changeObjectPrefix, changePrefixOrSuffix.changePrefixSettings);
+    }));
+    
+    context.subscriptions.push(vscode.commands.registerCommand('al-toolbox.changeSuffix', async () => {
+        telemetry.sendChangeSuffixEvent();
+        const currSuffix = await getObjectSuffix('current prefix');
+        await handleSuffixOrPrefixCommand(currSuffix, 'suffix', changePrefixOrSuffix.changeObjectSuffix, changePrefixOrSuffix.changeSuffixSettings);
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand('al-toolbox.initGitignore', () => {
@@ -309,7 +288,7 @@ function activate(context) {
 
     const useSimpleFunctionSnippets = config.get('UseSimpleFunctionSnippets');
     if (useSimpleFunctionSnippets) {
-        telemetry.SendUseSimpleFunctionSnippetsEvent();
+        telemetry.sendUseSimpleFunctionSnippetsEvent();
     }
     
     regionColorManager = new textColoring.RegionColorManager(context);
@@ -345,6 +324,18 @@ async function getObjectPrefix(placeHolder = 'Object prefix') {
     return objectPrefix
 }
 
+async function getObjectSuffix(placeHolder = 'Object suffix') {
+    let settings = vscode.workspace.getConfiguration('CRS');
+    let objectSuffix = settings.get('ObjectNameSuffix');
+    if (!objectSuffix) {
+        settings = vscode.workspace.getConfiguration('alVarHelper');
+        objectSuffix = settings.get('ignoreALSuffix');
+        if (!objectSuffix)
+            objectSuffix = await vscode.window.showInputBox({placeHolder: placeHolder});
+    }
+    return objectSuffix
+}
+
 async function requestNumber(placeHolder = ''){
     return vscode.window.showInputBox({placeHolder: placeHolder})
         .then(value => {
@@ -374,4 +365,35 @@ function SaveAndCloseAll() {
     return vscode.workspace.saveAll().then(() =>
         vscode.commands.executeCommand('workbench.action.closeAllEditors')
     );
+}
+
+async function handleSuffixOrPrefixCommand(currPrefixOrSuffix, valueType, changeFunction, settingsFunction) {
+    if (currPrefixOrSuffix !== undefined) {
+        const newValue = await vscode.window.showInputBox({ placeHolder: `new ${valueType}` });
+        if (newValue !== undefined) {
+            if (currPrefixOrSuffix === newValue) {
+                vscode.window.showInformationMessage(`${valueType} ${newValue} is the same as the current ${valueType}.`);
+            } else {
+                const changeInSetting = await vscode.window.showQuickPick(['Yes', 'No'], { placeHolder: `Do you want to change the ${valueType} in settings.json?` });
+                if (changeInSetting !== undefined) {
+                    if (changeInSetting === 'Yes')
+                        settingsFunction(currPrefixOrSuffix, newValue);
+                    changeFunction(currPrefixOrSuffix, newValue)
+                        .then(async results => {
+                            await SaveAndCloseAll();
+                            let numberOfDocumentsChanged = 0;
+                            results.objectResults.forEach(result => {
+                                if (result) ++numberOfDocumentsChanged;
+                            });
+                            let numberOfFieldsChanged = 0;
+                            results.fieldResults.forEach(result => {
+                                if (result) ++numberOfFieldsChanged;
+                            });
+                            vscode.window.showInformationMessage(
+                                `${numberOfFieldsChanged} field${numberOfFieldsChanged !== 1 ? 's' : ''} and ${numberOfDocumentsChanged} object${numberOfDocumentsChanged !== 1 ? 's' : ''} changed.`);
+                        });
+                }
+            }
+        }
+    }
 }

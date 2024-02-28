@@ -21,14 +21,6 @@
         "Other",
         "Snippets"
     ],
-    "activationEvents": [
-        "onLanguage:al",
-        "onCommand:al-toolbox.createRelatedTables",
-        "onCommand:al-toolbox.renumberAll",
-        "onCommand:al-toolbox.changePrefix",
-        "onCommand:al-toolbox.initGitignore",
-        "onCommand:al-toolbox.renumberAllFields"
-    ],
     "main": "./src/extension.js",
     "contributes": {
         "commands": [
@@ -68,6 +60,10 @@
                 "command": "al-toolbox.changePrefix",
                 "title": "ALTB: Change object prefix"
             },
+            {
+                "command": "al-toolbox.changeSuffix",
+                "title": "ALTB: Change object suffix"
+            },            
             {
                 "command": "al-toolbox.copyFieldsToRelatedTables",
                 "title": "ALTB: Copy fields to related tables"
