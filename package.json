@@ -2,7 +2,7 @@
     "name": "al-toolbox",
     "displayName": "AL Toolbox",
     "description": "AL Language Regions and Snippets",
-    "version": "2.0.30",
+    "version": "2.0.31",
     "publisher": "BartPermentier",
     "icon": "resources/ALTB.png",
     "engines": {
@@ -58,11 +58,11 @@
             },
             {
                 "command": "al-toolbox.changePrefix",
-                "title": "ALTB: Change object prefix"
+                "title": "ALTB: Change object/field prefix"
             },
             {
                 "command": "al-toolbox.changeSuffix",
-                "title": "ALTB: Change object suffix"
+                "title": "ALTB: Change object/field suffix"
             },            
             {
                 "command": "al-toolbox.copyFieldsToRelatedTables",
